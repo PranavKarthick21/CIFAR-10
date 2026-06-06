@@ -21,25 +21,39 @@ class CIFAR10CNN(nn.Module):
         self.conv4=nn.Conv2d(base_filters*2,base_filters*2,kernel_size=3,padding=1)
         self.bn4=nn.BatchNorm2d(base_filters*2)
         self.shortcut2=nn.Conv2d(base_filters,base_filters*2,kernel_size=1)
-        self.fc1=nn.Linear(base_filters*2*8*8,fc_hidden)
+        self.conv5=nn.Conv2d(base_filters*2,base_filters*4,kernel_size=3,padding=1)
+        self.bn5=nn.BatchNorm2d(base_filters*4)
+        self.conv6=nn.Conv2d(base_filters*4,base_filters*4,kernel_size=3,padding=1)
+        self.bn6=nn.BatchNorm2d(base_filters*4)
+        self.shortcut3=nn.Conv2d(base_filters*2,base_filters*4,kernel_size=1)
+        self.conv7=nn.Conv2d(base_filters*4,base_filters*8,kernel_size=3,padding=1)
+        self.bn7=nn.BatchNorm2d(base_filters*8)
+        self.conv8=nn.Conv2d(base_filters*8,base_filters*8,kernel_size=3,padding=1)
+        self.bn8=nn.BatchNorm2d(base_filters*8)
+        self.shortcut4=nn.Conv2d(base_filters*4,base_filters*8,kernel_size=1)
+        self.fc1=nn.Linear(base_filters*8*8*8,fc_hidden)
         self.fc2=nn.Linear(fc_hidden,num_classes)
         self.dropout=nn.Dropout(p=0.3)
     def forward(self,x):
         identity=self.shortcut1(x)
         x=self.relu(self.bn1(self.conv1(x)))
         x=self.relu(self.bn2(self.conv2(x))+identity)
-        x=self.pool(x)
         identity=self.shortcut2(x)
         x=self.relu(self.bn3(self.conv3(x)))
         x=self.relu(self.bn4(self.conv4(x))+identity)
         x=self.pool(x)
+        identity=self.shortcut3(x)
+        x=self.relu(self.bn5(self.conv5(x)))
+        x=self.relu(self.bn6(self.conv6(x))+identity)
+        identity=self.shortcut4(x)
+        x=self.relu(self.bn7(self.conv7(x)))
+        x=self.relu(self.bn8(self.conv8(x))+identity)
+        x=self.pool(x)
         x=x.view(x.shape[0],-1)
-        x=self.dropout(x)
         x=self.fc1(x)
-        x=self.relu(x)
+        x=self.dropout(x)
         x=self.fc2(x)
         return x
-    
 train_loader=DataLoader(train_set,batch_size=64,shuffle=True,num_workers=0)
 test_loader=DataLoader(test_set,batch_size=64,shuffle=False,num_workers=0)
 
@@ -70,7 +84,7 @@ for epoch in range(num_epochs):
         running_loss+=loss.item()
     avg_loss=running_loss/len(train_loader)
     train_accuracy=correct_train/len(train_loader.dataset)
-    with open("log2.txt","a")as f:
+    with open("log3.txt","a")as f:
         f.write(f'Epoch [{epoch +1}/{num_epochs}] Loss:{avg_loss :.4f} Train_Accuracy:{train_accuracy :.2f} ')
     print(f'Epoch [{epoch +1}/{num_epochs}] Loss:{avg_loss :.4f} Train_Accuracy:{train_accuracy :.2f}')   
     with torch.no_grad():
@@ -82,7 +96,7 @@ for epoch in range(num_epochs):
             correct_val+=(preds==labels).sum().item()
         accuracy=correct_val/len(test_loader.dataset)
         print(f'Val_Accuracy : {accuracy :.2f}')
-        with open("log2.txt","a")as f:
+        with open("log3.txt","a")as f:
             f.write(f'Val_Accuracy : {accuracy :.2f}\n')
         scheduler.step(accuracy)
-torch.save(model.state_dict(), 'cifar10_cnn_residuals2.pth')   
+torch.save(model.state_dict(), 'cifar10_cnn_residuals3.pth')   
